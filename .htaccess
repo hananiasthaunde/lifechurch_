@@ -1,6 +1,14 @@
-<IfModule mod_rewrite.c>
-    RewriteEngine On
+# Ativa o motor de reescrita de URLs
+RewriteEngine On
 
-    # Redireciona todas as requisições para a pasta /public
-    RewriteRule ^(.*)$ public/$1 [L]
-</IfModule>
+# Define a base do URL para o diretório raiz
+RewriteBase /
+
+# Regra 1: Redireciona o diretório raiz para a pasta /public/
+RewriteRule ^$ public/ [L]
+
+# Regra 2: Redireciona qualquer requisição que NÃO seja para um ficheiro ou diretório existente
+# para a pasta /public/
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ public/$1 [L]
