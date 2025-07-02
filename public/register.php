@@ -1,23 +1,52 @@
 <?php
-// --- INÍCIO DO BLOCO PHP UNIFICADO ---
+// --- INÍCIO DO FICHEIRO ÚNICO E INDEPENDENTE ---
+// O objetivo é eliminar todos os erros de 'require_once' e de sintaxe em outros ficheiros.
 
-// 1. Inicia a sessão para poder guardar mensagens
+// 1. Ativar a exibição de erros é a nossa prioridade.
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// 2. Iniciar a sessão.
 session_start();
 
-// 2. Inclui os ficheiros essenciais APENAS UMA VEZ e na ordem correta
-require_once __DIR__ . '/../includes/config.php';
-require_once __DIR__ . '/../includes/functions.php';
+// --- Conteúdo do config.php foi movido para aqui ---
+// !! IMPORTANTE !! Verifique se estes dados estão 100% corretos com os do seu cPanel.
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'lifechurchfinanc_nome_da_sua_db');
+define('DB_USER', 'lifechurchfinanc_lf_db');
+define('DB_PASS', 'm6aqpIg9R0Zkpx4%');
 
-// 3. Inicializa as variáveis para evitar erros na primeira carga da página
+// --- Conteúdo do functions.php foi movido para aqui ---
+function connect_db() {
+    // Usar @ para suprimir o aviso padrão e lidar com o erro manualmente.
+    $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
+    if ($conn->connect_error) {
+        // Em vez de morrer, vamos retornar false para que o código principal possa mostrar um erro amigável.
+        error_log("Falha na conexão: " . $conn->connect_error);
+        return false;
+    }
+    $conn->set_charset('utf8mb4');
+    return $conn;
+}
+
+function is_valid_email($email) {
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return false;
+    }
+    $domain = substr(strrchr($email, "@"), 1);
+    if (function_exists('checkdnsrr') && !checkdnsrr($domain, 'MX')) {
+        return false;
+    }
+    return true;
+}
+
+// --- Lógica Principal da Página ---
 $error = '';
 $churches = [];
-
-// 4. Conecta à base de dados
 $conn = connect_db();
 
-// 5. Apenas executa a lógica se a conexão for bem-sucedida
 if ($conn) {
-    // Busca a lista de igrejas para o dropdown
     $result_churches = $conn->query("SELECT id, name FROM churches ORDER BY name ASC");
     if ($result_churches) {
         while($row = $result_churches->fetch_assoc()) {
@@ -25,7 +54,6 @@ if ($conn) {
         }
     }
 
-    // Processa o formulário quando é submetido
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $name = $_POST['name'] ?? '';
         $email = $_POST['email'] ?? '';
@@ -37,7 +65,7 @@ if ($conn) {
         
         if ($name && $email && $password && $phone && $city && $role && $church_id) {
             if (!is_valid_email($email)) {
-                $error = 'Por favor, insira um endereço de email válido e existente.';
+                $error = 'Por favor, insira um endereço de email válido.';
             } else {
                 $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
                 $stmt->bind_param("s", $email);
@@ -53,27 +81,20 @@ if ($conn) {
                     
                     if ($stmt_insert->execute()) {
                         $_SESSION['success_message'] = 'Registo realizado com sucesso! A sua conta está pendente de aprovação.';
-                        $stmt_insert->close();
-                        $stmt->close();
-                        $conn->close();
                         header('Location: login.php');
                         exit;
                     } else {
                         $error = 'Erro ao registar. Tente novamente.';
                     }
                 }
-                $stmt->close();
             }
         } else {
             $error = 'Por favor, preencha todos os campos obrigatórios.';
         }
     }
 } else {
-    // Se a conexão falhar, define uma mensagem de erro clara
-    $error = "Erro fatal: Não foi possível conectar à base de dados. Verifique as configurações.";
+    $error = "Erro Crítico: Não foi possível estabelecer conexão com a base de dados. Verifique as credenciais.";
 }
-
-// --- FIM DO BLOCO PHP ---
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
