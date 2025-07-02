@@ -14,7 +14,7 @@
 define('DB_HOST', 'localhost');
 
 /** O nome da sua base de dados. O cPanel adiciona um prefixo (ex: lifechurchfinanc_meudb). */
-define('DB_NAME', 'lifechurchfinanc_nome_da_sua_db');
+define('DB_NAME', 'lifechurchfinanc_lifechurch_db1');
 
 /** O nome de utilizador da sua base de dados. O cPanel também adiciona um prefixo. */
 define('DB_USER', 'lifechurchfinanc_lf_db');

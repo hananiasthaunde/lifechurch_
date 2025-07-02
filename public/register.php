@@ -2,44 +2,31 @@
 // --- INÍCIO DO BLOCO PHP UNIFICADO ---
 
 // 1. Inicia a sessão para poder guardar mensagens
-// Deve ser a primeira coisa a ser executada
 session_start();
 
-// 2. Força a exibição de erros para depuração
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// 3. Inclui os ficheiros essenciais APENAS UMA VEZ
+// 2. Inclui os ficheiros essenciais APENAS UMA VEZ e na ordem correta
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-// 4. Inicializa as variáveis para evitar erros na primeira carga da página
+// 3. Inicializa as variáveis para evitar erros na primeira carga da página
 $error = '';
-$churches = []; // Inicializa como um array vazio
+$churches = [];
 
-// 5. Conecta à base de dados
+// 4. Conecta à base de dados
 $conn = connect_db();
 
-// 6. Busca a lista de igrejas para o dropdown
-// Apenas tenta buscar se a conexão foi bem-sucedida
+// 5. Apenas executa a lógica se a conexão for bem-sucedida
 if ($conn) {
+    // Busca a lista de igrejas para o dropdown
     $result_churches = $conn->query("SELECT id, name FROM churches ORDER BY name ASC");
     if ($result_churches) {
         while($row = $result_churches->fetch_assoc()) {
             $churches[] = $row;
         }
     }
-} else {
-    // Se a conexão falhar, define uma mensagem de erro
-    $error = "Erro fatal: Não foi possível conectar à base de dados.";
-}
 
-// 7. Processa o formulário quando é submetido (usando o método correto)
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    
-    // Verifica se a conexão existe antes de prosseguir
-    if ($conn) {
+    // Processa o formulário quando é submetido
+    if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $name = $_POST['name'] ?? '';
         $email = $_POST['email'] ?? '';
         $password = $_POST['password'] ?? '';
@@ -49,8 +36,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $church_id = $_POST['church_id'] ?? null;
         
         if ($name && $email && $password && $phone && $city && $role && $church_id) {
-            
-            // Validação do email
             if (!is_valid_email($email)) {
                 $error = 'Por favor, insira um endereço de email válido e existente.';
             } else {
@@ -63,20 +48,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     $error = 'Este email já está registado.';
                 } else {
                     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    $stmt_insert = $conn->prepare("INSERT INTO users (name, email, password, phone, city, role, church_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $stmt_insert->bind_param("ssssssi", $name, $email, $hashed_password, $phone, $city, $role, $church_id);
                     
-                    $stmt_insert_user = $conn->prepare("INSERT INTO users (name, email, password, phone, city, role, church_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $stmt_insert_user->bind_param("ssssssi", $name, $email, $hashed_password, $phone, $city, $role, $church_id);
-                    
-                    if ($stmt_insert_user->execute()) {
-                        $_SESSION['success_message'] = 'Registo realizado com sucesso! A sua conta está pendente de aprovação por um administrador.';
-                        
-                        // Fecha as conexões antes de redirecionar
-                        $stmt_insert_user->close();
+                    if ($stmt_insert->execute()) {
+                        $_SESSION['success_message'] = 'Registo realizado com sucesso! A sua conta está pendente de aprovação.';
+                        $stmt_insert->close();
                         $stmt->close();
                         $conn->close();
-
                         header('Location: login.php');
-                        exit; // Termina o script após o redirecionamento
+                        exit;
                     } else {
                         $error = 'Erro ao registar. Tente novamente.';
                     }
@@ -86,14 +67,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         } else {
             $error = 'Por favor, preencha todos os campos obrigatórios.';
         }
-    } else {
-        $error = "Não foi possível processar o registo devido a um erro na base de dados.";
     }
+} else {
+    // Se a conexão falhar, define uma mensagem de erro clara
+    $error = "Erro fatal: Não foi possível conectar à base de dados. Verifique as configurações.";
 }
-
-// A conexão só deve ser fechada aqui se não for mais usada.
-// Como o script termina ou é redirecionado, não é estritamente necessário fechar aqui.
-// if ($conn) { $conn->close(); }
 
 // --- FIM DO BLOCO PHP ---
 ?>
@@ -116,69 +94,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@300;400;500;700&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/remixicon/4.2.0/remixicon.min.css" />
     <style>
-      body {
-        font-family: 'Roboto', sans-serif;
-        background: linear-gradient(135deg, #F8FAFF 0%, #EEF2FF 100%);
-        min-height: 100vh;
-      }
-      .floating-label {
-        position: absolute;
-        pointer-events: none;
-        left: 40px;
-        top: 18px;
-        transition: 0.2s ease all;
-      }
-      .input-field:focus ~ .floating-label,
-      .input-field:not(:placeholder-shown) ~ .floating-label {
-        top: 8px;
-        font-size: 0.75rem;
-        color: #1A73E8;
-      }
-      select.input-field ~ .floating-label,
-      select.input-field:not([value=""]) ~ .floating-label {
-        top: 8px;
-        font-size: 0.75rem;
-        color: #1A73E8;
-      }
-      .input-field:focus {
-        border-color: #1A73E8;
-      }
-      .input-field {
-        transition: border-color 0.2s ease;
-      }
-      .register-card {
-        box-shadow: 0 4px_20px rgba(0, 0, 0, 0.08);
-        animation: fadeIn 0.5s ease-out;
-      }
-      @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-      }
-      .submit-btn {
-        transition: background-color 0.2s ease, transform 0.1s ease;
-      }
-      .submit-btn:hover {
-        background-color: #0D62D1;
-      }
-      .submit-btn:active {
-        transform: scale(0.98);
-      }
-      input:-webkit-autofill,
-      input:-webkit-autofill:hover, 
-      input:-webkit-autofill:focus, 
-      input:-webkit-autofill:active {
-          -webkit-box-shadow: 0 0 0 30px white inset !important;
-          box-shadow: 0 0 0 30px white inset !important;
-      }
+      body { font-family: 'Roboto', sans-serif; background: linear-gradient(135deg, #F8FAFF 0%, #EEF2FF 100%); min-height: 100vh; }
+      .floating-label { position: absolute; pointer-events: none; left: 40px; top: 18px; transition: 0.2s ease all; }
+      .input-field:focus ~ .floating-label, .input-field:not(:placeholder-shown) ~ .floating-label { top: 8px; font-size: 0.75rem; color: #1A73E8; }
+      select.input-field ~ .floating-label, select.input-field:not([value=""]) ~ .floating-label { top: 8px; font-size: 0.75rem; color: #1A73E8; }
+      .input-field:focus { border-color: #1A73E8; }
+      .input-field { transition: border-color 0.2s ease; }
+      .register-card { box-shadow: 0 4px_20px rgba(0, 0, 0, 0.08); animation: fadeIn 0.5s ease-out; }
+      @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      .submit-btn { transition: background-color 0.2s ease, transform 0.1s ease; }
+      .submit-btn:hover { background-color: #0D62D1; }
+      .submit-btn:active { transform: scale(0.98); }
+      input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus, input:-webkit-autofill:active { -webkit-box-shadow: 0 0 0 30px white inset !important; box-shadow: 0 0 0 30px white inset !important; }
     </style>
   </head>
   <body class="flex items-center justify-center p-4">
@@ -196,37 +126,31 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
       <?php endif; ?>
 
       <form class="space-y-6" method="POST" action="register.php">
-        
         <div class="relative">
           <i class="ri-user-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input type="text" id="name" name="name" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 bg-white border border-gray-300 rounded focus:outline-none" placeholder=" " required />
           <label for="name" class="floating-label text-gray-500 text-sm">Nome Completo</label>
         </div>
-
         <div class="relative">
           <i class="ri-mail-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input type="email" id="email" name="email" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 bg-white border border-gray-300 rounded focus:outline-none" placeholder=" " required />
           <label for="email" class="floating-label text-gray-500 text-sm">Email</label>
         </div>
-
         <div class="relative">
           <i class="ri-lock-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input type="password" id="password" name="password" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 bg-white border border-gray-300 rounded focus:outline-none" placeholder=" " required />
           <label for="password" class="floating-label text-gray-500 text-sm">Senha</label>
         </div>
-
         <div class="relative">
           <i class="ri-phone-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input type="text" id="phone" name="phone" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 bg-white border border-gray-300 rounded focus:outline-none" placeholder=" " required />
           <label for="phone" class="floating-label text-gray-500 text-sm">Telefone</label>
         </div>
-
         <div class="relative">
           <i class="ri-community-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
           <input type="text" id="city" name="city" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 bg-white border border-gray-300 rounded focus:outline-none" placeholder=" " required />
           <label for="city" class="floating-label text-gray-500 text-sm">Cidade</label>
         </div>
-        
         <div class="relative">
             <i class="ri-user-star-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <select id="role" name="role" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 border border-gray-300 rounded focus:outline-none bg-white" required>
@@ -236,7 +160,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </select>
             <label for="role" class="floating-label text-gray-500 text-sm">Função na Igreja</label>
         </div>
-
         <div class="relative">
             <i class="ri-church-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <select id="church_id" name="church_id" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 border border-gray-300 rounded focus:outline-none bg-white" required>
@@ -247,15 +170,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </select>
             <label for="church_id" class="floating-label text-gray-500 text-sm">Igreja</label>
         </div>
-
-        <button
-          type="submit"
-          class="submit-btn w-full h-12 bg-primary text-white font-medium rounded-button whitespace-nowrap flex items-center justify-center"
-        >
+        <button type="submit" class="submit-btn w-full h-12 bg-primary text-white font-medium rounded-button whitespace-nowrap flex items-center justify-center">
           Registar
         </button>
       </form>
-
       <div class="mt-8 text-center">
         <p class="text-gray-600 text-sm">
           Já tem uma conta?
@@ -263,39 +181,5 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </p>
       </div>
     </div>
-
-    <script>
-      document.addEventListener("DOMContentLoaded", function () {
-        const form = document.querySelector("form");
-        const requiredInputs = form.querySelectorAll("input[required], select[required]");
-
-        form.addEventListener("submit", function (e) {
-          let isValid = true;
-          
-          requiredInputs.forEach(input => {
-            if (!input.value.trim()) {
-              input.classList.add("border-red-500");
-              isValid = false;
-            } else {
-              input.classList.remove("border-red-500");
-            }
-          });
-
-          if (!isValid) {
-            e.preventDefault();
-          } else {
-            const button = form.querySelector('button[type="submit"]');
-            button.innerHTML = '<div class="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div> A Registar...';
-            button.disabled = true;
-          }
-        });
-
-        requiredInputs.forEach((input) => {
-          input.addEventListener("input", function () {
-            this.classList.remove("border-red-500");
-          });
-        });
-      });
-    </script>
   </body>
 </html>
