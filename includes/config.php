@@ -1,15 +1,25 @@
 <?php
-// Arquivo de configuração do banco de dados e outras configurações
 
-define("DB_HOST", "localhost");
-define("DB_USER", "root");
-define("DB_PASS", ""); // Senha vazia, como o MySQL foi configurado
-define("DB_NAME", "lifechurch_db");
+// Use os valores exatos que copiou do cPanel
+
+define('DB_HOST', 'localhost');
+
+// O nome exato da base de dados da tabela "Bases de dados atuais"
+define('DB_NAME', 'lifechurchfinanc_lifechurch_db1'); 
+
+// O utilizador exato da tabela "Bases de dados atuais"
+define('DB_USER', 'lifechurchfinanc_lf_db');
+
+// A nova palavra-passe que acabou de criar e copiar
+define('DB_PASS', 'm6aqpIg9R0Zkpx4%');
+
 
 // Cor principal do sistema
 define("PRIMARY_COLOR", "#e7461f");
 
 // Outras configurações
 
+
 ?>
+
 
