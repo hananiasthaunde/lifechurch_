@@ -91,10 +91,10 @@ require_once __DIR__ . '/../includes/functions.php';
     <!-- ========== HEADER ========== -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-            <a href="index.php" class="text-2xl font-['Pacifico'] text-primary">Life Church</a>
+            <a href="../index.html" class="text-2xl font-['Pacifico'] text-primary">Life Church</a>
             
             <nav class="hidden md:flex items-center space-x-8">
-                <a href="index.php" class="text-gray-600 hover:text-primary font-medium">Home</a>
+                <a href="../index.html" class="text-gray-600 hover:text-primary font-medium">Home</a>
                 <a href="about.php" class="text-gray-600 hover:text-primary font-medium">Sobre</a>
                 <a href="gallery.php" class="text-primary font-semibold">Galeria</a>
                 <a href="contact.php" class="text-gray-600 hover:text-primary font-medium">Contacto</a>

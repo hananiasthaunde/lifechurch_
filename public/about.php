@@ -59,10 +59,10 @@ require_once __DIR__ . '/../includes/functions.php';
     <!-- ========== HEADER ========== -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 py-4 flex items-center justify-between">
-            <a href="index.php" class="text-2xl font-['Pacifico'] text-primary">Life Church</a>
+            <a href="../index.html" class="text-2xl font-['Pacifico'] text-primary">Life Church</a>
             
             <nav class="hidden md:flex items-center space-x-8">
-                <a href="index.php" class="text-gray-600 hover:text-primary font-medium">Home</a>
+                <a href="../index.html" class="text-gray-600 hover:text-primary font-medium">Home</a>
                 <a href="about.php" class="text-primary font-semibold">Sobre</a>
                 <a href="gallery.php" class="text-gray-600 hover:text-primary font-medium">Galeria</a>
                 <a href="contact.php" class="text-gray-600 hover:text-primary font-medium">Contacto</a>
@@ -80,7 +80,7 @@ require_once __DIR__ . '/../includes/functions.php';
         <!-- Mobile Menu -->
         <div class="hidden" id="mobile-menu">
             <nav class="flex flex-col p-4 bg-white border-t border-gray-100">
-                <a href="index.php" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Home</a>
+                <a href="../index.html" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Home</a>
                 <a href="about.php" class="py-2 px-4 text-primary bg-blue-50 font-medium rounded-md">Sobre</a>
                 <a href="gallery.php" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Galeria</a>
                 <a href="contact.php" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Contacto</a>
