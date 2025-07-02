@@ -58,17 +58,19 @@
     <!-- ========== HEADER ========== -->
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 py-4 flex items-center justify-between">
+            <!-- O link do logo aponta para a própria página inicial -->
             <a href="index.html" class="text-2xl font-['Pacifico'] text-primary">Life Church</a>
             
             <nav class="hidden md:flex items-center space-x-8">
+                <!-- Links atualizados para apontar para a pasta /public e ficheiros .php -->
                 <a href="index.html" class="text-primary font-semibold">Home</a>
-                <a href="about.html" class="text-gray-600 hover:text-primary font-medium">Sobre</a>
-                <a href="gallery.html" class="text-gray-600 hover:text-primary font-medium">Galeria</a>
-                <a href="contact.html" class="text-gray-600 hover:text-primary font-medium">Contacto</a>
+                <a href="public/about.php" class="text-gray-600 hover:text-primary font-medium">Sobre</a>
+                <a href="public/gallery.php" class="text-gray-600 hover:text-primary font-medium">Galeria</a>
+                <a href="public/contact.php" class="text-gray-600 hover:text-primary font-medium">Contacto</a>
             </nav>
 
             <div class="flex items-center space-x-4">
-                <a href="login.html" class="bg-primary text-white px-5 py-2 !rounded-button whitespace-nowrap hover:bg-primary/90 transition-colors">
+                <a href="public/login.php" class="bg-primary text-white px-5 py-2 !rounded-button whitespace-nowrap hover:bg-primary/90 transition-colors">
                     Aceder ao Portal
                 </a>
                 <button class="md:hidden w-10 h-10 flex items-center justify-center text-gray-700" id="mobile-menu-button">
@@ -80,9 +82,9 @@
         <div class="hidden" id="mobile-menu">
             <nav class="flex flex-col p-4 bg-white border-t border-gray-100">
                 <a href="index.html" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Home</a>
-                <a href="about.html" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Sobre</a>
-                <a href="gallery.html" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Galeria</a>
-                <a href="contact.html" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Contacto</a>
+                <a href="public/about.php" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Sobre</a>
+                <a href="public/gallery.php" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Galeria</a>
+                <a href="public/contact.php" class="py-2 px-4 text-gray-700 hover:text-primary font-medium rounded-md hover:bg-gray-50">Contacto</a>
             </nav>
         </div>
     </header>
@@ -101,11 +103,11 @@
                         Uma plataforma para organizar e controlar as entradas, saídas e relatórios financeiros da sua igreja com eficiência e transparência.
                     </p>
                     <div class="flex flex-col sm:flex-row gap-4">
-                        <a href="login.html" class="bg-primary text-white px-8 py-4 !rounded-button whitespace-nowrap hover:bg-primary/90 font-semibold text-lg flex items-center justify-center shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:-translate-y-0.5">
+                        <a href="public/login.php" class="bg-primary text-white px-8 py-4 !rounded-button whitespace-nowrap hover:bg-primary/90 font-semibold text-lg flex items-center justify-center shadow-lg shadow-primary/30 transition-all hover:shadow-xl hover:-translate-y-0.5">
                            <i class="ri-login-box-line mr-2"></i>Aceder ao Portal
                         </a>
                          <a href="#features" class="bg-white text-primary border border-gray-200 px-8 py-4 !rounded-button whitespace-nowrap hover:bg-gray-100 hover:border-gray-300 font-semibold text-lg flex items-center justify-center transition-all">
-                           <i class="ri-arrow-down-s-line mr-2"></i>Conheça o Sistema
+                            <i class="ri-arrow-down-s-line mr-2"></i>Conheça o Sistema
                         </a>
                     </div>
                 </div>
@@ -197,7 +199,7 @@
                      <p class="max-w-2xl mx-auto mb-8 opacity-90">
                           Crie uma conta para começar a utilizar as ferramentas de gestão financeira para a sua igreja.
                      </p>
-                     <a href="register.html" class="bg-white text-primary font-bold px-8 py-4 !rounded-button whitespace-nowrap hover:bg-gray-200 text-lg shadow-lg transition-transform hover:scale-105">
+                     <a href="public/register.php" class="bg-white text-primary font-bold px-8 py-4 !rounded-button whitespace-nowrap hover:bg-gray-200 text-lg shadow-lg transition-transform hover:scale-105">
                          Registar Agora
                      </a>
                 </div>
@@ -225,32 +227,32 @@
                      <h3 class="text-lg font-semibold mb-6">Navegação</h3>
                     <ul class="space-y-3">
                         <li><a href="index.html" class="text-gray-400 hover:text-white">Home</a></li>
-                        <li><a href="about.html" class="text-gray-400 hover:text-white">Sobre</a></li>
-                        <li><a href="gallery.html" class="text-gray-400 hover:text-white">Galeria</a></li>
-                        <li><a href="contact.html" class="text-gray-400 hover:text-white">Contacto</a></li>
+                        <li><a href="public/about.php" class="text-gray-400 hover:text-white">Sobre</a></li>
+                        <li><a href="public/gallery.php" class="text-gray-400 hover:text-white">Galeria</a></li>
+                        <li><a href="public/contact.php" class="text-gray-400 hover:text-white">Contacto</a></li>
                     </ul>
                 </div>
                 <div>
                      <h3 class="text-lg font-semibold mb-6">Portal</h3>
                     <ul class="space-y-3">
-                        <li><a href="login.html" class="text-gray-400 hover:text-white">Login</a></li>
-                        <li><a href="register.html" class="text-gray-400 hover:text-white">Registar</a></li>
+                        <li><a href="public/login.php" class="text-gray-400 hover:text-white">Login</a></li>
+                        <li><a href="public/register.php" class="text-gray-400 hover:text-white">Registar</a></li>
                     </ul>
                 </div>
                 <div>
                      <h3 class="text-lg font-semibold mb-6">Contacto</h3>
                      <ul class="space-y-3 text-gray-400">
-                        <li class="flex items-start">
-                           <i class="ri-map-pin-line mr-3 mt-1"></i>
-                           <span>Cidade de Tete, Bairro Chingodzi</span>
+                         <li class="flex items-start">
+                            <i class="ri-map-pin-line mr-3 mt-1"></i>
+                            <span>Cidade de Tete, Bairro Chingodzi</span>
                         </li>
                          <li class="flex items-center">
-                           <i class="ri-phone-line mr-3"></i>
-                           <span>+258 84 216 3212</span>
+                            <i class="ri-phone-line mr-3"></i>
+                            <span>+258 84 216 3212</span>
                         </li>
                          <li class="flex items-center">
-                           <i class="ri-mail-line mr-3"></i>
-                           <span>hananiasthaunde@gmail.com</span>
+                            <i class="ri-mail-line mr-3"></i>
+                            <span>hananiasthaunde@gmail.com</span>
                         </li>
                      </ul>
                 </div>
