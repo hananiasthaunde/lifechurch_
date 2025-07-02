@@ -1,7 +1,30 @@
 <?php
 session_start(); // Inicia a sessão para poder guardar a mensagem de sucesso
+
+// --- INÍCIO DO CÓDIGO DE CORREÇÃO ---
+
+// 1. Força a exibição de qualquer erro fatal do PHP
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// 2. Garante que os caminhos para os ficheiros estão corretos
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
+
+// Inicia a sessão (se ainda não tiver sido iniciada)
+if (session_status() == PHP_SESSION_NONE) {
+    session_start();
+}
+
+// --- FIM DO CÓDIGO DE CORREÇÃO ---
+
+// O resto do seu código de register.php continua aqui...
+// Por exemplo:
+// if ($_SERVER["REQUEST_METHOD"] == "POST") { ... }
+
+?>
+<!-- O seu código HTML começa aqui -->
 
 $error = '';
 $conn = connect_db();
