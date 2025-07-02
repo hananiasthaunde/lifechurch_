@@ -1,91 +1,101 @@
 <?php
-session_start(); // Inicia a sessão para poder guardar a mensagem de sucesso
+// --- INÍCIO DO BLOCO PHP UNIFICADO ---
 
-// --- INÍCIO DO CÓDIGO DE CORREÇÃO ---
+// 1. Inicia a sessão para poder guardar mensagens
+// Deve ser a primeira coisa a ser executada
+session_start();
 
-// 1. Força a exibição de qualquer erro fatal do PHP
+// 2. Força a exibição de erros para depuração
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// 2. Garante que os caminhos para os ficheiros estão corretos
+// 3. Inclui os ficheiros essenciais APENAS UMA VEZ
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-// Inicia a sessão (se ainda não tiver sido iniciada)
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
-}
-
-// --- FIM DO CÓDIGO DE CORREÇÃO ---
-
-// O resto do seu código de register.php continua aqui...
-// Por exemplo:
-// if ($_SERVER["REQUEST_METHOD"] == "POST") { ... }
-
-?>
-<!-- O seu código HTML começa aqui -->
-
+// 4. Inicializa as variáveis para evitar erros na primeira carga da página
 $error = '';
+$churches = []; // Inicializa como um array vazio
+
+// 5. Conecta à base de dados
 $conn = connect_db();
 
-// --- Buscar a lista de igrejas para o dropdown ---
-$churches = [];
-$result_churches = $conn->query("SELECT id, name FROM churches ORDER BY name ASC");
-if ($result_churches) {
-    while($row = $result_churches->fetch_assoc()) {
-        $churches[] = $row;
+// 6. Busca a lista de igrejas para o dropdown
+// Apenas tenta buscar se a conexão foi bem-sucedida
+if ($conn) {
+    $result_churches = $conn->query("SELECT id, name FROM churches ORDER BY name ASC");
+    if ($result_churches) {
+        while($row = $result_churches->fetch_assoc()) {
+            $churches[] = $row;
+        }
     }
+} else {
+    // Se a conexão falhar, define uma mensagem de erro
+    $error = "Erro fatal: Não foi possível conectar à base de dados.";
 }
 
-
-if ($_POST) {
-    $name = $_POST['name'] ?? '';
-    $email = $_POST['email'] ?? '';
-    $password = $_POST['password'] ?? '';
-    $phone = $_POST['phone'] ?? '';
-    $city = $_POST['city'] ?? '';
-    $role = $_POST['role'] ?? 'membro';
-    $church_id = $_POST['church_id'] ?? null; // Alterado para church_id
+// 7. Processa o formulário quando é submetido (usando o método correto)
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
     
-    if ($name && $email && $password && $phone && $city && $role && $church_id) {
+    // Verifica se a conexão existe antes de prosseguir
+    if ($conn) {
+        $name = $_POST['name'] ?? '';
+        $email = $_POST['email'] ?? '';
+        $password = $_POST['password'] ?? '';
+        $phone = $_POST['phone'] ?? '';
+        $city = $_POST['city'] ?? '';
+        $role = $_POST['role'] ?? 'membro';
+        $church_id = $_POST['church_id'] ?? null;
         
-        // Validação do email
-        if (!is_valid_email($email)) {
-            $error = 'Por favor, insira um endereço de email válido e existente.';
-        } else {
-            $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-            $stmt->bind_param("s", $email);
-            $stmt->execute();
-            $result = $stmt->get_result();
+        if ($name && $email && $password && $phone && $city && $role && $church_id) {
             
-            if ($result->num_rows > 0) {
-                $error = 'Este email já está registado.';
+            // Validação do email
+            if (!is_valid_email($email)) {
+                $error = 'Por favor, insira um endereço de email válido e existente.';
             } else {
-                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+                $stmt->bind_param("s", $email);
+                $stmt->execute();
+                $result = $stmt->get_result();
                 
-                // is_approved é 0 por padrão, aguardando aprovação
-                $stmt_insert_user = $conn->prepare("INSERT INTO users (name, email, password, phone, city, role, church_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                $stmt_insert_user->bind_param("ssssssi", $name, $email, $hashed_password, $phone, $city, $role, $church_id);
-                
-                if ($stmt_insert_user->execute()) {
-                    // --- MENSAGEM DE SUCESSO ATUALIZADA ---
-                    $_SESSION['success_message'] = 'Registo realizado com sucesso! A sua conta está pendente de aprovação por um administrador.';
-                    header('Location: login.php');
-                    $stmt->close();
-                    $conn->close();
-                    exit;
+                if ($result->num_rows > 0) {
+                    $error = 'Este email já está registado.';
                 } else {
-                    $error = 'Erro ao registar. Tente novamente.';
+                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                    
+                    $stmt_insert_user = $conn->prepare("INSERT INTO users (name, email, password, phone, city, role, church_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $stmt_insert_user->bind_param("ssssssi", $name, $email, $hashed_password, $phone, $city, $role, $church_id);
+                    
+                    if ($stmt_insert_user->execute()) {
+                        $_SESSION['success_message'] = 'Registo realizado com sucesso! A sua conta está pendente de aprovação por um administrador.';
+                        
+                        // Fecha as conexões antes de redirecionar
+                        $stmt_insert_user->close();
+                        $stmt->close();
+                        $conn->close();
+
+                        header('Location: login.php');
+                        exit; // Termina o script após o redirecionamento
+                    } else {
+                        $error = 'Erro ao registar. Tente novamente.';
+                    }
                 }
+                $stmt->close();
             }
-            $stmt->close();
+        } else {
+            $error = 'Por favor, preencha todos os campos obrigatórios.';
         }
     } else {
-        $error = 'Por favor, preencha todos os campos obrigatórios.';
+        $error = "Não foi possível processar o registo devido a um erro na base de dados.";
     }
 }
-$conn->close();
+
+// A conexão só deve ser fechada aqui se não for mais usada.
+// Como o script termina ou é redirecionado, não é estritamente necessário fechar aqui.
+// if ($conn) { $conn->close(); }
+
+// --- FIM DO BLOCO PHP ---
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
