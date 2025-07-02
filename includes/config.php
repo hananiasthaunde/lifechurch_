@@ -19,7 +19,4 @@ define("PRIMARY_COLOR", "#e7461f");
 
 // Outras configurações
 
-
-?>
-
-
+// A tag de fecho "?>" foi removida intencionalmente para evitar erros de "headers already sent".
