@@ -13,7 +13,7 @@ session_start();
 // --- Conteúdo do config.php foi movido para aqui ---
 // !! IMPORTANTE !! Verifique se estes dados estão 100% corretos com os do seu cPanel.
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'lifechurchfinanc_nome_da_sua_db');
+define('DB_NAME', 'lifechurchfinanc_lifechurch_db1');
 define('DB_USER', 'lifechurchfinanc_lf_db');
 define('DB_PASS', 'm6aqpIg9R0Zkpx4%');
 
