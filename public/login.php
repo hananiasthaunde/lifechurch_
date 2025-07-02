@@ -1,78 +1,91 @@
 <?php
-// Inicia a sessão no topo do script
-session_start();
+/**
+ * FICHEIRO: public/login.php
+ * VERSÃO CORRIGIDA E OTIMIZADA
+ *
+ * O que foi corrigido:
+ * 1. Ativação da exibição de erros para diagnosticar a "página branca".
+ * 2. Garantia de que nenhum conteúdo é enviado antes de `session_start()` e `header()`.
+ * 3. Lógica de redirecionamento mais robusta e segura.
+ * 4. Tratamento de erros de conexão com a base de dados.
+ */
 
-// Inclui os ficheiros de configuração e funções
+// 1. Ativar a exibição de erros para depuração
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// 2. Incluir os ficheiros essenciais
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
 
-// Inicializa as variáveis de mensagem
+// 3. Iniciar a sessão
+// É crucial que esta seja uma das primeiras coisas no script.
+session_start();
+
+// Inicializa as variáveis
 $error = '';
 $success_message = '';
 
 // Verifica se há uma mensagem de sucesso vinda da página de registo
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
-    unset($_SESSION['success_message']); // Limpa a mensagem para não a mostrar novamente
+    unset($_SESSION['success_message']); // Limpa a mensagem
 }
 
 // Processa o formulário apenas se for submetido via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $email = $_POST['email'] ?? '';
+    $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     
-    if ($email && $password) {
-        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $error = 'Formato de email inválido.';
+    if (empty($email) || empty($password)) {
+        $error = 'Por favor, preencha todos os campos.';
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error = 'Formato de email inválido.';
+    } else {
+        $conn = connect_db();
+        
+        if (!$conn) {
+            $error = "Erro crítico no sistema. Tente novamente mais tarde.";
         } else {
-            $conn = connect_db();
+            $stmt = $conn->prepare("SELECT id, name, email, password, role, church_id, is_approved FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
             
-            if ($conn) {
-                $stmt = $conn->prepare("SELECT id, name, email, password, role, church_id, is_approved FROM users WHERE email = ?");
-                $stmt->bind_param("s", $email);
-                $stmt->execute();
-                $result = $stmt->get_result();
+            if ($result->num_rows > 0) {
+                $user = $result->fetch_assoc();
                 
-                if ($result->num_rows > 0) {
-                    $user = $result->fetch_assoc();
-                    
-                    // Verifica a senha e se a conta está aprovada
-                    if (password_verify($password, $user['password'])) {
-                        if ($user['is_approved'] == 0) {
-                            $error = 'A sua conta está pendente de aprovação por um administrador.';
-                        } else {
-                            // Login bem-sucedido: define as variáveis de sessão
-                            $_SESSION['user_id'] = $user['id'];
-                            $_SESSION['user_name'] = $user['name'];
-                            $_SESSION['user_email'] = $user['email'];
-                            $_SESSION['user_role'] = $user['role'];
-                            $_SESSION['church_id'] = $user['church_id'];
-                            
-                            // Redireciona com base na função do utilizador
-                            switch ($user['role']) {
-                                case 'lider':
-                                    header('Location: ../admin/celulas.php');
-                                    break;
-                                default:
-                                    header('Location: ../admin/dashboard.php');
-                                    break;
-                            }
-                            exit; // Termina o script após o redirecionamento
-                        }
+                // Verifica a senha
+                if (password_verify($password, $user['password'])) {
+                    // Verifica se a conta está aprovada
+                    if ($user['is_approved'] != 1) {
+                        $error = 'A sua conta ainda não foi aprovada por um administrador.';
                     } else {
-                        $error = 'Email ou senha incorretos.';
+                        // Login bem-sucedido: define as variáveis de sessão
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['user_name'] = $user['name'];
+                        $_SESSION['user_email'] = $user['email'];
+                        $_SESSION['user_role'] = $user['role'];
+                        $_SESSION['church_id'] = $user['church_id'];
+                        
+                        // Redireciona para o painel apropriado
+                        if ($user['role'] === 'lider') {
+                            header('Location: ../admin/celulas.php');
+                        } else {
+                            header('Location: ../admin/dashboard.php');
+                        }
+                        exit; // Termina o script imediatamente após o redirecionamento
                     }
                 } else {
                     $error = 'Email ou senha incorretos.';
                 }
-                $stmt->close();
-                $conn->close();
             } else {
-                $error = "Erro crítico: Não foi possível conectar à base de dados.";
+                $error = 'Email ou senha incorretos.';
             }
+            $stmt->close();
+            $conn->close();
         }
-    } else {
-        $error = 'Por favor, preencha todos os campos.';
     }
 }
 ?>

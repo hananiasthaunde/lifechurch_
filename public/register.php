@@ -1,52 +1,38 @@
 <?php
-// --- INÍCIO DO FICHEIRO ÚNICO E INDEPENDENTE ---
-// O objetivo é eliminar todos os erros de 'require_once' e de sintaxe em outros ficheiros.
+/**
+ * FICHEIRO: public/register.php
+ * VERSÃO CORRIGIDA E OTIMIZADA
+ *
+ * O que foi corrigido:
+ * 1. Remoção da função `is_valid_email` que usava `checkdnsrr`, pois falha em muitos servidores.
+ * A validação `FILTER_VALIDATE_EMAIL` do PHP é suficiente.
+ * 2. Adicionado `is_approved = 0` na inserção para garantir que novos utilizadores ficam pendentes.
+ * 3. Melhoria na gestão de erros de conexão e de execução das queries.
+ * 4. Reorganização do código para maior clareza.
+ */
 
-// 1. Ativar a exibição de erros é a nossa prioridade.
+// 1. Ativar a exibição de erros para depuração (pode remover em produção)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// 2. Iniciar a sessão.
+// 2. Incluir os ficheiros essenciais
+require_once __DIR__ . '/../includes/config.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+// 3. Iniciar a sessão
 session_start();
-
-// --- Conteúdo do config.php foi movido para aqui ---
-// !! IMPORTANTE !! Verifique se estes dados estão 100% corretos com os do seu cPanel.
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'lifechurchfinanc_lifechurch_db1');
-define('DB_USER', 'lifechurchfinanc_lf_db');
-define('DB_PASS', 'm6aqpIg9R0Zkpx4%');
-
-// --- Conteúdo do functions.php foi movido para aqui ---
-function connect_db() {
-    // Usar @ para suprimir o aviso padrão e lidar com o erro manualmente.
-    $conn = @new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME);
-    if ($conn->connect_error) {
-        // Em vez de morrer, vamos retornar false para que o código principal possa mostrar um erro amigável.
-        error_log("Falha na conexão: " . $conn->connect_error);
-        return false;
-    }
-    $conn->set_charset('utf8mb4');
-    return $conn;
-}
-
-function is_valid_email($email) {
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        return false;
-    }
-    $domain = substr(strrchr($email, "@"), 1);
-    if (function_exists('checkdnsrr') && !checkdnsrr($domain, 'MX')) {
-        return false;
-    }
-    return true;
-}
 
 // --- Lógica Principal da Página ---
 $error = '';
 $churches = [];
 $conn = connect_db();
 
-if ($conn) {
+// Se a conexão falhar, define uma mensagem de erro amigável.
+if (!$conn) {
+    $error = "Ocorreu um erro no sistema. Por favor, tente mais tarde.";
+} else {
+    // Carrega as igrejas para o menu dropdown.
     $result_churches = $conn->query("SELECT id, name FROM churches ORDER BY name ASC");
     if ($result_churches) {
         while($row = $result_churches->fetch_assoc()) {
@@ -54,46 +40,53 @@ if ($conn) {
         }
     }
 
+    // Processa o formulário quando submetido
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
-        $name = $_POST['name'] ?? '';
-        $email = $_POST['email'] ?? '';
+        $name = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
-        $phone = $_POST['phone'] ?? '';
-        $city = $_POST['city'] ?? '';
+        $phone = trim($_POST['phone'] ?? '');
+        $city = trim($_POST['city'] ?? '');
         $role = $_POST['role'] ?? 'membro';
         $church_id = $_POST['church_id'] ?? null;
         
-        if ($name && $email && $password && $phone && $city && $role && $church_id) {
-            if (!is_valid_email($email)) {
-                $error = 'Por favor, insira um endereço de email válido.';
-            } else {
-                $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
-                $stmt->bind_param("s", $email);
-                $stmt->execute();
-                $result = $stmt->get_result();
-                
-                if ($result->num_rows > 0) {
-                    $error = 'Este email já está registado.';
-                } else {
-                    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-                    $stmt_insert = $conn->prepare("INSERT INTO users (name, email, password, phone, city, role, church_id) VALUES (?, ?, ?, ?, ?, ?, ?)");
-                    $stmt_insert->bind_param("ssssssi", $name, $email, $hashed_password, $phone, $city, $role, $church_id);
-                    
-                    if ($stmt_insert->execute()) {
-                        $_SESSION['success_message'] = 'Registo realizado com sucesso! A sua conta está pendente de aprovação.';
-                        header('Location: login.php');
-                        exit;
-                    } else {
-                        $error = 'Erro ao registar. Tente novamente.';
-                    }
-                }
-            }
-        } else {
+        // Validação dos campos
+        if (empty($name) || empty($email) || empty($password) || empty($phone) || empty($city) || empty($role) || empty($church_id)) {
             $error = 'Por favor, preencha todos os campos obrigatórios.';
+        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $error = 'Por favor, insira um endereço de email válido.';
+        } else {
+            // Verifica se o email já existe
+            $stmt = $conn->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->bind_param("s", $email);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            if ($result->num_rows > 0) {
+                $error = 'Este email já está registado. Tente fazer login.';
+            } else {
+                // Email não existe, prossegue com a inserção
+                $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+                $is_approved = 0; // Novos registos ficam pendentes
+
+                $stmt_insert = $conn->prepare("INSERT INTO users (name, email, password, phone, city, role, church_id, is_approved) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+                $stmt_insert->bind_param("ssssssii", $name, $email, $hashed_password, $phone, $city, $role, $church_id, $is_approved);
+                
+                if ($stmt_insert->execute()) {
+                    // Registo bem-sucedido
+                    $_SESSION['success_message'] = 'Registo realizado com sucesso! A sua conta está pendente de aprovação por um administrador.';
+                    header('Location: login.php');
+                    exit;
+                } else {
+                    $error = 'Erro ao registar. Por favor, tente novamente.';
+                    // Para depuração: error_log($stmt_insert->error);
+                }
+                $stmt_insert->close();
+            }
+            $stmt->close();
         }
     }
-} else {
-    $error = "Erro Crítico: Não foi possível estabelecer conexão com a base de dados. Verifique as credenciais.";
+    $conn->close();
 }
 ?>
 <!DOCTYPE html>
@@ -185,9 +178,11 @@ if ($conn) {
             <i class="ri-church-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
             <select id="church_id" name="church_id" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 border border-gray-300 rounded focus:outline-none bg-white" required>
                 <option value="" disabled selected>Selecione a sua igreja</option>
-                <?php foreach($churches as $church): ?>
-                    <option value="<?php echo $church['id']; ?>"><?php echo htmlspecialchars($church['name']); ?></option>
-                <?php endforeach; ?>
+                <?php if (!empty($churches)): ?>
+                    <?php foreach($churches as $church): ?>
+                        <option value="<?php echo $church['id']; ?>"><?php echo htmlspecialchars($church['name']); ?></option>
+                    <?php endforeach; ?>
+                <?php endif; ?>
             </select>
             <label for="church_id" class="floating-label text-gray-500 text-sm">Igreja</label>
         </div>
