@@ -1,124 +1,80 @@
 <?php
-// --- INÍCIO DO BLOCO DE DEPURAÇÃO ---
-// O objetivo é descobrir exatamente em que ponto o script falha.
-
-// 1. Ativar buffer de saída para evitar erros de "headers already sent"
-ob_start();
-
-// 2. Ativar a exibição de TODOS os erros
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-echo "<strong>Debug Login - Passo 1:</strong> Exibição de erros ativada.<br>";
-
-// 3. Iniciar a sessão
+// Inicia a sessão no topo do script
 session_start();
-echo "<strong>Debug Login - Passo 2:</strong> Sessão iniciada.<br>";
 
-// 4. Incluir ficheiros
-echo "<strong>Debug Login - Passo 3:</strong> Tentando incluir config.php...<br>";
+// Inclui os ficheiros de configuração e funções
 require_once __DIR__ . '/../includes/config.php';
-echo "<strong>Debug Login - Passo 3.1:</strong> config.php incluído.<br>";
-
-echo "<strong>Debug Login - Passo 4:</strong> Tentando incluir functions.php...<br>";
 require_once __DIR__ . '/../includes/functions.php';
-echo "<strong>Debug Login - Passo 4.1:</strong> functions.php incluído.<br>";
 
+// Inicializa as variáveis de mensagem
 $error = '';
 $success_message = '';
 
-// Verifica se há uma mensagem de sucesso vinda do registo
+// Verifica se há uma mensagem de sucesso vinda da página de registo
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
-    unset($_SESSION['success_message']);
-    echo "<strong>Debug Login - Info:</strong> Mensagem de sucesso do registo encontrada.<br>";
+    unset($_SESSION['success_message']); // Limpa a mensagem para não a mostrar novamente
 }
 
-// Verifica se o formulário foi submetido
+// Processa o formulário apenas se for submetido via POST
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    echo "<strong>Debug Login - Passo 5:</strong> Formulário submetido (POST).<br>";
     $email = $_POST['email'] ?? '';
     $password = $_POST['password'] ?? '';
     
     if ($email && $password) {
-        echo "<strong>Debug Login - Passo 6:</strong> Email e Senha recebidos: " . htmlspecialchars($email) . "<br>";
-
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             $error = 'Formato de email inválido.';
-            echo "<strong style='color:red;'>Debug Login - ERRO:</strong> Formato de email inválido.<br>";
         } else {
-            echo "<strong>Debug Login - Passo 7:</strong> Conectando ao DB...<br>";
             $conn = connect_db();
             
             if ($conn) {
-                echo "<strong>Debug Login - Passo 8:</strong> Conexão com DB OK. Preparando a query...<br>";
                 $stmt = $conn->prepare("SELECT id, name, email, password, role, church_id, is_approved FROM users WHERE email = ?");
                 $stmt->bind_param("s", $email);
                 $stmt->execute();
                 $result = $stmt->get_result();
                 
                 if ($result->num_rows > 0) {
-                    echo "<strong>Debug Login - Passo 9:</strong> Utilizador encontrado na base de dados.<br>";
                     $user = $result->fetch_assoc();
                     
+                    // Verifica a senha e se a conta está aprovada
                     if (password_verify($password, $user['password'])) {
-                        echo "<strong>Debug Login - Passo 10:</strong> Senha correta.<br>";
-                        
                         if ($user['is_approved'] == 0) {
                             $error = 'A sua conta está pendente de aprovação por um administrador.';
-                            echo "<strong>Debug Login - AVISO:</strong> Conta não aprovada.<br>";
                         } else {
-                            echo "<strong>Debug Login - Passo 11:</strong> Conta aprovada. Definindo sessão...<br>";
+                            // Login bem-sucedido: define as variáveis de sessão
                             $_SESSION['user_id'] = $user['id'];
                             $_SESSION['user_name'] = $user['name'];
+                            $_SESSION['user_email'] = $user['email'];
                             $_SESSION['user_role'] = $user['role'];
                             $_SESSION['church_id'] = $user['church_id'];
                             
-                            $role = $user['role'];
-                            echo "<strong>Debug Login - Passo 12:</strong> Sessão definida. Role: '" . htmlspecialchars($role) . "'. Redirecionando...<br>";
-                            echo "--- Se vir esta mensagem e nada acontecer, o erro está no ficheiro de destino. ---<br>";
-
-                            // Limpa qualquer saída antes do redirecionamento
-                            ob_end_clean(); 
-                            
-                            // Redirecionamento
-                            switch ($role) {
+                            // Redireciona com base na função do utilizador
+                            switch ($user['role']) {
                                 case 'lider':
                                     header('Location: ../admin/celulas.php');
                                     break;
-                                case 'master_admin':
-                                case 'pastor_principal':
-                                case 'pastor':
-                                case 'membro':
                                 default:
                                     header('Location: ../admin/dashboard.php');
                                     break;
                             }
-                            exit; // ESSENCIAL depois de um header('Location')
+                            exit; // Termina o script após o redirecionamento
                         }
                     } else {
                         $error = 'Email ou senha incorretos.';
-                        echo "<strong style='color:red;'>Debug Login - ERRO:</strong> Senha incorreta.<br>";
                     }
                 } else {
                     $error = 'Email ou senha incorretos.';
-                    echo "<strong style='color:red;'>Debug Login - ERRO:</strong> Utilizador não encontrado.<br>";
                 }
                 $stmt->close();
                 $conn->close();
             } else {
-                $error = "Erro ao conectar à base de dados.";
-                echo "<strong style='color:red;'>Debug Login - ERRO FATAL:</strong> Falha na conexão com o DB.<br>";
+                $error = "Erro crítico: Não foi possível conectar à base de dados.";
             }
         }
     } else {
         $error = 'Por favor, preencha todos os campos.';
-        echo "<strong>Debug Login - AVISO:</strong> Campos em falta.<br>";
     }
 }
-
-// Se o script continuar, significa que houve um erro e não houve redirecionamento.
-ob_end_flush();
 ?>
 <!DOCTYPE html>
 <html lang="pt-br">
