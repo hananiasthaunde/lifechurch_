@@ -1,27 +1,25 @@
 <?php
 /**
  * FICHEIRO: public/register.php
- * VERSÃO CORRIGIDA E OTIMIZADA
+ * VERSÃO CORRIGIDA FINAL
  *
  * O que foi corrigido:
- * 1. Remoção da função `is_valid_email` que usava `checkdnsrr`, pois falha em muitos servidores.
- * A validação `FILTER_VALIDATE_EMAIL` do PHP é suficiente.
- * 2. Adicionado `is_approved = 0` na inserção para garantir que novos utilizadores ficam pendentes.
- * 3. Melhoria na gestão de erros de conexão e de execução das queries.
- * 4. Reorganização do código para maior clareza.
+ * 1. A função `session_start()` foi movida para o topo absoluto do script.
+ * Isto resolve o erro "headers have already been sent".
+ * 2. Mantida a lógica de validação e inserção de dados.
  */
 
-// 1. Ativar a exibição de erros para depuração (pode remover em produção)
+// 1. Iniciar a sessão é a PRIMEIRA COISA a ser feita no script.
+session_start();
+
+// 2. Ativar a exibição de erros para depuração (pode remover em produção)
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// 2. Incluir os ficheiros essenciais
+// 3. Incluir os ficheiros essenciais
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
-
-// 3. Iniciar a sessão
-session_start();
 
 // --- Lógica Principal da Página ---
 $error = '';
@@ -79,7 +77,6 @@ if (!$conn) {
                     exit;
                 } else {
                     $error = 'Erro ao registar. Por favor, tente novamente.';
-                    // Para depuração: error_log($stmt_insert->error);
                 }
                 $stmt_insert->close();
             }
