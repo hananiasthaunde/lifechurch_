@@ -1,27 +1,26 @@
 <?php
 /**
  * FICHEIRO: public/login.php
- * VERSÃO CORRIGIDA E OTIMIZADA
+ * VERSÃO CORRIGIDA FINAL
  *
  * O que foi corrigido:
- * 1. Ativação da exibição de erros para diagnosticar a "página branca".
- * 2. Garantia de que nenhum conteúdo é enviado antes de `session_start()` e `header()`.
- * 3. Lógica de redirecionamento mais robusta e segura.
- * 4. Tratamento de erros de conexão com a base de dados.
+ * 1. A função `session_start()` foi movida para o topo absoluto do script.
+ * Isto resolve o erro "headers have already been sent", que é a causa da página branca.
+ * 2. A lógica de erros e redirecionamento foi mantida.
  */
 
-// 1. Ativar a exibição de erros para depuração
+// 1. Iniciar a sessão é a PRIMEIRA COISA a ser feita.
+// Isto previne o erro "headers already sent".
+session_start();
+
+// 2. Ativar a exibição de erros para depuração
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
-// 2. Incluir os ficheiros essenciais
+// 3. Incluir os ficheiros essenciais
 require_once __DIR__ . '/../includes/config.php';
 require_once __DIR__ . '/../includes/functions.php';
-
-// 3. Iniciar a sessão
-// É crucial que esta seja uma das primeiras coisas no script.
-session_start();
 
 // Inicializa as variáveis
 $error = '';
