@@ -4,11 +4,8 @@ RewriteEngine On
 # Define a base do URL para o diretório raiz
 RewriteBase /
 
-# Regra 1: Redireciona o diretório raiz para a pasta /public/
-RewriteRule ^$ public/ [L]
-
-# Regra 2: Redireciona qualquer requisição que NÃO seja para um ficheiro ou diretório existente
-# para a pasta /public/
+# Se a requisição for para um ficheiro que existe, não faz nada
 RewriteCond %{REQUEST_FILENAME} !-f
+# Se a requisição for para um diretório que existe, não faz nada
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ public/$1 [L]
+
