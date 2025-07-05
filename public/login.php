@@ -1,17 +1,23 @@
 <?php
 /**
  * FICHEIRO: public/login.php
- * VERSÃO CORRIGIDA FINAL
+ * VERSÃO CORRIGIDA PARA O LOOP DE LOGIN
  *
  * O que foi corrigido:
- * 1. A função `session_start()` foi movida para o topo absoluto do script.
- * Isto resolve o erro "headers have already been sent", que é a causa da página branca.
- * 2. A lógica de erros e redirecionamento foi mantida.
+ * 1. Adicionada uma verificação no topo para redirecionar utilizadores que já estão logados.
+ * 2. Alterados os caminhos de redirecionamento `header('Location: ...')` para caminhos absolutos (ex: /admin/dashboard).
+ * Isto evita conflitos com as regras do .htaccess e garante que o redirecionamento funciona sempre.
  */
 
 // 1. Iniciar a sessão é a PRIMEIRA COISA a ser feita.
-// Isto previne o erro "headers already sent".
 session_start();
+
+// --- NOVO: Redirecionar se o utilizador já estiver logado ---
+if (isset($_SESSION['user_id'])) {
+    // Redireciona para o dashboard se a sessão já existir.
+    header('Location: /admin/dashboard');
+    exit;
+}
 
 // 2. Ativar a exibição de erros para depuração
 ini_set('display_errors', 1);
@@ -29,18 +35,16 @@ $success_message = '';
 // Verifica se há uma mensagem de sucesso vinda da página de registo
 if (isset($_SESSION['success_message'])) {
     $success_message = $_SESSION['success_message'];
-    unset($_SESSION['success_message']); // Limpa a mensagem
+    unset($_SESSION['success_message']);
 }
 
-// Processa o formulário apenas se for submetido via POST
+// Processa o formulário
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
     
     if (empty($email) || empty($password)) {
         $error = 'Por favor, preencha todos os campos.';
-    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = 'Formato de email inválido.';
     } else {
         $conn = connect_db();
         
@@ -55,26 +59,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             if ($result->num_rows > 0) {
                 $user = $result->fetch_assoc();
                 
-                // Verifica a senha
                 if (password_verify($password, $user['password'])) {
-                    // Verifica se a conta está aprovada
                     if ($user['is_approved'] != 1) {
                         $error = 'A sua conta ainda não foi aprovada por um administrador.';
                     } else {
-                        // Login bem-sucedido: define as variáveis de sessão
+                        // Login bem-sucedido
                         $_SESSION['user_id'] = $user['id'];
                         $_SESSION['user_name'] = $user['name'];
                         $_SESSION['user_email'] = $user['email'];
                         $_SESSION['user_role'] = $user['role'];
                         $_SESSION['church_id'] = $user['church_id'];
                         
-                        // Redireciona para o painel apropriado
+                        // --- CORREÇÃO: Usar caminhos absolutos para o redirecionamento ---
                         if ($user['role'] === 'lider') {
-                            header('Location: ../admin/celulas.php');
+                            header('Location: /admin/celulas');
                         } else {
-                            header('Location: ../admin/dashboard.php');
+                            header('Location: /admin/dashboard');
                         }
-                        exit; // Termina o script imediatamente após o redirecionamento
+                        exit;
                     }
                 } else {
                     $error = 'Email ou senha incorretos.';
@@ -140,13 +142,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
       <?php endif; ?>
 
-      <form class="space-y-6" method="POST" action="login.php">
+      <form class="space-y-6" method="POST" action="/public/login">
         <div class="relative"><i class="ri-mail-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i><input type="email" id="email" name="email" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 bg-white border border-gray-300 rounded focus:outline-none" placeholder=" " required /><label for="email" class="floating-label text-gray-500 text-sm">Email</label></div>
         <div class="relative"><i class="ri-lock-line absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i><input type="password" id="password" name="password" class="input-field w-full h-14 pl-10 pr-3 pt-6 pb-2 bg-white border border-gray-300 rounded focus:outline-none" placeholder=" " required /><label for="password" class="floating-label text-gray-500 text-sm">Senha</label></div>
         <button type="submit" class="w-full h-12 bg-primary text-white font-medium rounded-button whitespace-nowrap flex items-center justify-center hover:bg-blue-700">Entrar</button>
       </form>
 
-      <div class="mt-8 text-center"><p class="text-gray-600 text-sm">Não tem uma conta? <a href="register.php" class="text-primary font-medium hover:underline">Registe-se</a></p></div>
+      <div class="mt-8 text-center"><p class="text-gray-600 text-sm">Não tem uma conta? <a href="/public/register" class="text-primary font-medium hover:underline">Registe-se</a></p></div>
     </div>
   </body>
 </html>
